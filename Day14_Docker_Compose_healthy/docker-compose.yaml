@@ -1,0 +1,82 @@
+version: "1.0"
+services:
+  yelb-ui:
+    #   name: yelb-ui
+    image: mreferre/yelb-ui:0.10
+    ports:
+      - "8080:80"
+    environment:
+      - UI_ENV = test
+    networks:
+      - yelb-network
+    depends_on:
+      - yelb-appserver
+    command: 
+      - /bin/sh
+      - -c 
+      - |
+        apt update && apt upgrade -y && apt-get install curl -y
+        ./startup.sh
+    healthcheck:
+      test: curl --fail  http://localhost || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+  
+  
+  yelb-appserver:
+    #   name: yelb-appserver
+    image: mreferre/yelb-appserver:0.7
+    ports:
+      - "4567:4567"
+    environment:
+      - RACK_ENV = test
+    networks:
+      - yelb-network
+    depends_on:
+      - redis-server
+      - yelb-db
+        
+        
+
+
+  yelb-db:
+    #    name: yelb-db
+    image: mreferre/yelb-db:0.6
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - yelb-network
+
+
+  redis-server:
+    #   name: redis-server
+    image: redis:4.0.2
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis:/data
+    networks:
+      - yelb-network
+
+
+volumes:
+  pgdata:
+    name: pgdata
+    driver: local
+  redis:
+    name: redis
+    driver: local
+
+
+
+networks:
+  yelb-network:
+    name: yelb-network
+    driver: bridge
+
+
+
